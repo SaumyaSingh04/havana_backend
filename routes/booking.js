@@ -49,7 +49,11 @@ router.put(
   ]),
   updateBooking
 );
-router.post("/upload-camera-photo", upload.fields([{ name: "cameraPhotoUrl", maxCount: 1 }]), uploadCameraPhoto);
+router.post(
+  "/upload-camera-photo",
+  upload.fields([{ name: "cameraPhotoUrl", maxCount: 1 }]),
+  uploadCameraPhoto
+);
 
 // Delete booking
 router.delete("/:id", deleteBooking);

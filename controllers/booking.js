@@ -316,21 +316,38 @@ export const exportBookingsExcel = async (req, res) => {
   }
 };
 
+
 export const uploadCameraPhoto = async (req, res) => {
   try {
-    const cameraPhotoUrl = req.files?.cameraPhoto?.[0]?.path;
+    const bookingId = req.query.bookingId;
 
-    if (!cameraPhotoUrl) {
+    if (!bookingId) {
+      return res.status(400).json({ success: false, message: "Booking ID is required" });
+    }
+
+    const file = req.files?.cameraPhotoUrl?.[0];
+
+    if (!file) {
       return res.status(400).json({ success: false, message: "No webcam photo uploaded" });
     }
 
-    res.status(200).json({
-      success: true,
-      message: "Webcam photo uploaded successfully",
-      url: cameraPhotoUrl,
-    });
+    const cameraPhotoUrl = file.path;
+
+    // Update booking with camera photo URL
+    const booking = await Booking.findByIdAndUpdate(
+      bookingId,
+      { cameraPhotoUrl },
+      { new: true }
+    );
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    res.json({ success: true, booking });
   } catch (error) {
     console.error("Webcam upload error:", error);
-    res.status(500).json({ success: false, message: "Failed to upload webcam photo" });
+    res.status(500).json({ success: false, message: "Upload failed" });
   }
 };
+
