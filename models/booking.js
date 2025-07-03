@@ -18,7 +18,7 @@ const bookingSchema = new mongoose.Schema({
   address: { type: String },
   city: { type: String },
   nationality: { type: String },
-  mobileNo: { type: String },
+  mobileNo: { type: String, required: true },
   email: { type: String },
   phoneNo: { type: String },
   birthDate: { type: Date },
