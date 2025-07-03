@@ -236,7 +236,6 @@ export const exportBookingsExcel = async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Bookings");
 
-    // Define columns based on schema
     worksheet.columns = [
       { header: "GRC No", key: "grcNo", width: 15 },
       { header: "Booking Date", key: "bookingDate", width: 20 },
@@ -297,57 +296,32 @@ export const exportBookingsExcel = async (req, res) => {
 
     // Add rows
     bookings.forEach((booking) => {
-      worksheet.addRow(booking);
+      worksheet.addRow({
+        ...booking,
+        bookingDate: booking.bookingDate ? new Date(booking.bookingDate).toLocaleString() : "",
+        checkInDate: booking.checkInDate ? new Date(booking.checkInDate).toLocaleString() : "",
+        checkOutDate: booking.checkOutDate ? new Date(booking.checkOutDate).toLocaleString() : "",
+        birthDate: booking.birthDate ? new Date(booking.birthDate).toLocaleDateString() : "",
+        anniversary: booking.anniversary ? new Date(booking.anniversary).toLocaleDateString() : "",
+        createdAt: booking.createdAt ? new Date(booking.createdAt).toLocaleString() : "",
+        updatedAt: booking.updatedAt ? new Date(booking.updatedAt).toLocaleString() : "",
+      });
     });
 
-    // Set header for download
+    // Set correct headers
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
     res.setHeader("Content-Disposition", "attachment; filename=bookings.xlsx");
 
-    // Send the Excel file
+    // Send Excel stream directly to response
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
     console.error("Excel export error:", error);
-    res.status(500).json({ success: false, message: "Excel export failed" });
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: "Excel export failed" });
+    }
   }
 };
-
-
-export const uploadCameraPhoto = async (req, res) => {
-  try {
-    const bookingId = req.query.bookingId;
-
-    if (!bookingId) {
-      return res.status(400).json({ success: false, message: "Booking ID is required" });
-    }
-
-    const file = req.files?.cameraPhotoUrl?.[0];
-
-    if (!file) {
-      return res.status(400).json({ success: false, message: "No webcam photo uploaded" });
-    }
-
-    const cameraPhotoUrl = file.path;
-
-    // Update booking with camera photo URL
-    const booking = await Booking.findByIdAndUpdate(
-      bookingId,
-      { cameraPhotoUrl },
-      { new: true }
-    );
-
-    if (!booking) {
-      return res.status(404).json({ success: false, message: "Booking not found" });
-    }
-
-    res.json({ success: true, booking });
-  } catch (error) {
-    console.error("Webcam upload error:", error);
-    res.status(500).json({ success: false, message: "Upload failed" });
-  }
-};
-
