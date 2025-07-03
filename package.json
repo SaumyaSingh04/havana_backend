@@ -20,6 +20,7 @@
     "crypto": "^1.0.1",
     "csvtojson": "^2.0.10",
     "dotenv": "^17.0.1",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.2",

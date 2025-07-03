@@ -100,8 +100,6 @@ export const createBooking = async (req, res) => {
   }
 };
 
-
-
 // Get all bookings
 export const getAllBookings = async (req, res) => {
   try {
@@ -236,75 +234,87 @@ export const exportBookingsCSV = async (req, res) => {
   try {
     const bookings = await Booking.find().lean();
 
-    const fields = [
-      "grcNo",
-      "bookingDate",
-      "checkInDate",
-      "checkOutDate",
-      "days",
-      "timeIn",
-      "timeOut",
-      "salutation",
-      "name",
-      "age",
-      "gender",
-      "address",
-      "city",
-      "nationality",
-      "mobileNo",
-      "email",
-      "phoneNo",
-      "birthDate",
-      "anniversary",
-      "companyName",
-      "companyGSTIN",
-      "idProofType",
-      "idProofNumber",
-      "idProofImageUrl",
-      "idProofImageUrl2",
-      "photoUrl",
-      "cameraPhotoUrl",
-      "roomNo",
-      "planPackage",
-      "noOfAdults",
-      "noOfChildren",
-      "rate",
-      "taxIncluded",
-      "serviceCharge",
-      "isLeader",
-      "arrivedFrom",
-      "destination",
-      "remark",
-      "businessSource",
-      "marketSegment",
-      "purposeOfVisit",
-      "discountPercent",
-      "discountRoomSource",
-      "paymentMode",
-      "paymentStatus",
-      "bookingRefNo",
-      "mgmtBlock",
-      "billingInstruction",
-      "temperature",
-      "fromCSV",
-      "epabx",
-      "vip",
-      "status",
-      "createdAt",
-      "updatedAt"
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Bookings");
+
+    // Define columns based on schema
+    worksheet.columns = [
+      { header: "GRC No", key: "grcNo", width: 15 },
+      { header: "Booking Date", key: "bookingDate", width: 20 },
+      { header: "Check-In Date", key: "checkInDate", width: 20 },
+      { header: "Check-Out Date", key: "checkOutDate", width: 20 },
+      { header: "Days", key: "days", width: 10 },
+      { header: "Time In", key: "timeIn", width: 10 },
+      { header: "Time Out", key: "timeOut", width: 10 },
+      { header: "Salutation", key: "salutation", width: 10 },
+      { header: "Name", key: "name", width: 20 },
+      { header: "Age", key: "age", width: 10 },
+      { header: "Gender", key: "gender", width: 10 },
+      { header: "Address", key: "address", width: 30 },
+      { header: "City", key: "city", width: 15 },
+      { header: "Nationality", key: "nationality", width: 15 },
+      { header: "Mobile No", key: "mobileNo", width: 15 },
+      { header: "Email", key: "email", width: 20 },
+      { header: "Phone No", key: "phoneNo", width: 15 },
+      { header: "Birth Date", key: "birthDate", width: 15 },
+      { header: "Anniversary", key: "anniversary", width: 15 },
+      { header: "Company Name", key: "companyName", width: 20 },
+      { header: "Company GSTIN", key: "companyGSTIN", width: 20 },
+      { header: "ID Type", key: "idProofType", width: 15 },
+      { header: "ID Number", key: "idProofNumber", width: 20 },
+      { header: "ID Image 1", key: "idProofImageUrl", width: 30 },
+      { header: "ID Image 2", key: "idProofImageUrl2", width: 30 },
+      { header: "Photo", key: "photoUrl", width: 30 },
+      { header: "Camera Photo", key: "cameraPhotoUrl", width: 30 },
+      { header: "Room No", key: "roomNo", width: 10 },
+      { header: "Plan Package", key: "planPackage", width: 15 },
+      { header: "No. of Adults", key: "noOfAdults", width: 10 },
+      { header: "No. of Children", key: "noOfChildren", width: 10 },
+      { header: "Rate", key: "rate", width: 10 },
+      { header: "Tax Included", key: "taxIncluded", width: 10 },
+      { header: "Service Charge", key: "serviceCharge", width: 10 },
+      { header: "Is Leader", key: "isLeader", width: 10 },
+      { header: "Arrived From", key: "arrivedFrom", width: 15 },
+      { header: "Destination", key: "destination", width: 15 },
+      { header: "Remark", key: "remark", width: 20 },
+      { header: "Business Source", key: "businessSource", width: 20 },
+      { header: "Market Segment", key: "marketSegment", width: 20 },
+      { header: "Purpose of Visit", key: "purposeOfVisit", width: 20 },
+      { header: "Discount (%)", key: "discountPercent", width: 10 },
+      { header: "Discount Source", key: "discountRoomSource", width: 10 },
+      { header: "Payment Mode", key: "paymentMode", width: 15 },
+      { header: "Payment Status", key: "paymentStatus", width: 15 },
+      { header: "Booking Ref No", key: "bookingRefNo", width: 20 },
+      { header: "Mgmt Block", key: "mgmtBlock", width: 10 },
+      { header: "Billing Instruction", key: "billingInstruction", width: 25 },
+      { header: "Temperature", key: "temperature", width: 10 },
+      { header: "From CSV", key: "fromCSV", width: 10 },
+      { header: "EPABX", key: "epabx", width: 10 },
+      { header: "VIP", key: "vip", width: 10 },
+      { header: "Status", key: "status", width: 15 },
+      { header: "Created At", key: "createdAt", width: 20 },
+      { header: "Updated At", key: "updatedAt", width: 20 },
     ];
 
-    const parser = new Parser({ fields });
-    const csv = parser.parse(bookings);
+    // Add rows
+    bookings.forEach((booking) => {
+      worksheet.addRow(booking);
+    });
 
-    res.header("Content-Type", "text/csv");
-    res.attachment("bookings.csv");
-    return res.send(csv);
+    // Set header for download
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader("Content-Disposition", "attachment; filename=bookings.xlsx");
+
+    // Send the Excel file
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (error) {
-    console.log("CSV export error:", error);
-    res.status(500).json({ success: false, message: "CSV export failed" });
+    console.error("Excel export error:", error);
+    res.status(500).json({ success: false, message: "Excel export failed" });
   }
 };
-
 
   
