@@ -8,7 +8,7 @@ import {
   deleteBooking,
   updateStatus,
   searchBookings,
-  exportBookingsCSV,
+  exportBookingsExcel,
 } from "../controllers/booking.js";
 
 const router = express.Router();
@@ -26,7 +26,7 @@ router.post(
 );
 
 // Export bookings as CSV
-router.get("/exportBookingsCSV", exportBookingsCSV);
+router.get("/exportBookingsExcel", exportBookingsExcel);
 
 // Search bookings
 router.get("/search", searchBookings);

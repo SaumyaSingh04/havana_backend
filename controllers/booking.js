@@ -1,5 +1,4 @@
 import { Booking } from "../models/booking.js";
-import { Parser } from "json2csv";
 
 
 // Helper to trim and clean inputs
@@ -230,7 +229,7 @@ export const searchBookings = async (req, res) => {
   };
 
 // Export Bookings as CSV (All Fields)
-export const exportBookingsCSV = async (req, res) => {
+export const exportBookingsExcel = async (req, res) => {
   try {
     const bookings = await Booking.find().lean();
 
