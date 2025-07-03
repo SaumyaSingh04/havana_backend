@@ -9,6 +9,7 @@ import {
   updateStatus,
   searchBookings,
   exportBookingsExcel,
+  uploadCameraPhoto
 } from "../controllers/booking.js";
 
 const router = express.Router();
@@ -48,6 +49,7 @@ router.put(
   ]),
   updateBooking
 );
+router.post("/upload-camera-photo", upload.fields([{ name: "cameraPhotoUrl", maxCount: 1 }]), uploadCameraPhoto);
 
 // Delete booking
 router.delete("/:id", deleteBooking);

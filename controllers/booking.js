@@ -316,4 +316,21 @@ export const exportBookingsExcel = async (req, res) => {
   }
 };
 
-  
+export const uploadCameraPhoto = async (req, res) => {
+  try {
+    const cameraPhotoUrl = req.files?.cameraPhoto?.[0]?.path;
+
+    if (!cameraPhotoUrl) {
+      return res.status(400).json({ success: false, message: "No webcam photo uploaded" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Webcam photo uploaded successfully",
+      url: cameraPhotoUrl,
+    });
+  } catch (error) {
+    console.error("Webcam upload error:", error);
+    res.status(500).json({ success: false, message: "Failed to upload webcam photo" });
+  }
+};
