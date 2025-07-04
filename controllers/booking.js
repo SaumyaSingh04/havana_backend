@@ -79,8 +79,8 @@ export const createBooking = async (req, res) => {
     const photoFile =
       req.files?.photoUrl?.[0] || req.files?.cameraPhotoUrl?.[0];
     const photoUrl = photoFile?.path;
-    const idProofImageUrl = req.files?.idProof?.[0]?.path;
-    const idProofImageUrl2 = req.files?.idProof2?.[0]?.path;
+    const idProofImageUrl = req.files?.idProofImageUrl?.[0]?.path;
+const idProofImageUrl2 = req.files?.idProofImageUrl2?.[0]?.path;
 
     // Create booking
     const newBooking = new Booking({
@@ -261,7 +261,6 @@ export const exportBookingsExcel = async (req, res) => {
       { header: "Photo URL", key: "photoUrl" },
       { header: "ID Proof Image 1", key: "idProofImageUrl" },
       { header: "ID Proof Image 2", key: "idProofImageUrl2" },
-      { header: "Camera Photo", key: "cameraPhotoUrl" },
       { header: "Room No", key: "roomNo" },
       { header: "Plan Package", key: "planPackage" },
       { header: "Adults", key: "noOfAdults" },

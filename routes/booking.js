@@ -21,7 +21,6 @@ router.post(
     { name: "photoUrl", maxCount: 1 },
     { name: "idProofImageUrl", maxCount: 1 },
     { name: "idProofImageUrl2", maxCount: 1 },
-    { name: "cameraPhotoUrl", maxCount: 1 },
   ]),
   createBooking
 );
@@ -44,8 +43,7 @@ router.put(
   upload.fields([
     { name: "photoUrl", maxCount: 1 },
     { name: "idProofImageUrl", maxCount: 1 },
-    { name: "idProofImageUrl2", maxCount: 1 },
-    { name: "cameraPhotoUrl", maxCount: 1 },
+    { name: "idProofImageUrl2", maxCount: 1 }
   ]),
   updateBooking
 );
