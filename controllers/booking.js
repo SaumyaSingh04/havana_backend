@@ -75,9 +75,12 @@ export const createBooking = async (req, res) => {
     };
 
     // ✅ Handle images
-    const photoUrl = req.files?.photoUrl?.[0]?.path;
-    const idProofImageUrl = req.files?.idProofImageUrl?.[0]?.path;
-    const idProofImageUrl2 = req.files?.idProofImageUrl2?.[0]?.path;
+    const photoUrl =
+  req.files?.photoUrl?.[0]?.path || req.body.photoUrl || "";
+const idProofImageUrl =
+  req.files?.idProofImageUrl?.[0]?.path || req.body.idProofImageUrl || "";
+const idProofImageUrl2 =
+  req.files?.idProofImageUrl2?.[0]?.path || req.body.idProofImageUrl2 || "";
 
     const newBooking = new Booking({
       ...cleanedBody,
