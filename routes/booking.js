@@ -8,13 +8,12 @@ import {
   deleteBooking,
   updateStatus,
   searchBookings,
-  exportBookingsExcel,
-  uploadCameraPhoto
+  exportBookingsExcel
 } from "../controllers/booking.js";
 
 const router = express.Router();
 
-// Create new booking with image uploads
+// Create new booking with image uploads (from file or webcam)
 router.post(
   "/",
   upload.fields([
@@ -25,7 +24,7 @@ router.post(
   createBooking
 );
 
-// Export bookings as CSV
+// Export bookings
 router.get("/exportBookingsExcel", exportBookingsExcel);
 
 // Search bookings
@@ -37,7 +36,7 @@ router.get("/", getAllBookings);
 // Get booking by ID
 router.get("/:id", getBookingById);
 
-// ✅ Update booking with image fields
+// Update booking with image updates
 router.put(
   "/:id",
   upload.fields([
@@ -46,11 +45,6 @@ router.put(
     { name: "idProofImageUrl2", maxCount: 1 }
   ]),
   updateBooking
-);
-router.post(
-  "/upload-camera-photo",
-  upload.fields([{ name: "cameraPhotoUrl", maxCount: 1 }]),
-  uploadCameraPhoto
 );
 
 // Delete booking

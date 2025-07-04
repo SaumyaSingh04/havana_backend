@@ -1,21 +1,20 @@
 import { Booking } from "../models/booking.js";
 import ExcelJS from "exceljs";
 
-// Helper to trim and clean inputs
+// Trim helper
 const cleanInput = (input) => {
   if (!input || typeof input !== "string") return input;
   return input.trim();
 };
 
+// ✅ CREATE BOOKING
 export const createBooking = async (req, res) => {
   try {
     const body = req.body;
 
-    // Generate auto GRC Number
     const count = await Booking.countDocuments();
-    const newGrcNo = `GRC-${String(count + 1).padStart(3, "0")}`; // GRC-001, GRC-002...
+    const newGrcNo = `GRC-${String(count + 1).padStart(3, "0")}`;
 
-    // Clean & prepare body
     const cleanedBody = {
       grcNo: newGrcNo,
       bookingDate: body.bookingDate || new Date(),
@@ -75,14 +74,11 @@ export const createBooking = async (req, res) => {
       status: cleanInput(body.status),
     };
 
-    // Handle uploaded files
-    const photoFile =
-      req.files?.photoUrl?.[0] || req.files?.cameraPhotoUrl?.[0];
-    const photoUrl = photoFile?.path;
+    // ✅ Handle images
+    const photoUrl = req.files?.photoUrl?.[0]?.path;
     const idProofImageUrl = req.files?.idProofImageUrl?.[0]?.path;
-const idProofImageUrl2 = req.files?.idProofImageUrl2?.[0]?.path;
+    const idProofImageUrl2 = req.files?.idProofImageUrl2?.[0]?.path;
 
-    // Create booking
     const newBooking = new Booking({
       ...cleanedBody,
       photoUrl,
@@ -91,10 +87,40 @@ const idProofImageUrl2 = req.files?.idProofImageUrl2?.[0]?.path;
     });
 
     await newBooking.save();
-
     res.status(201).json({ success: true, booking: newBooking });
   } catch (error) {
     console.log("Create booking error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ UPDATE BOOKING
+export const updateBooking = async (req, res) => {
+  try {
+    const updatedBody = {};
+
+    for (const key in req.body) {
+      updatedBody[key] =
+        typeof req.body[key] === "string" ? req.body[key].trim() : req.body[key];
+    }
+
+    if (req.files?.photoUrl?.[0]?.path) {
+      updatedBody.photoUrl = req.files.photoUrl[0].path;
+    }
+    if (req.files?.idProofImageUrl?.[0]?.path) {
+      updatedBody.idProofImageUrl = req.files.idProofImageUrl[0].path;
+    }
+    if (req.files?.idProofImageUrl2?.[0]?.path) {
+      updatedBody.idProofImageUrl2 = req.files.idProofImageUrl2[0].path;
+    }
+
+    const booking = await Booking.findByIdAndUpdate(req.params.id, updatedBody, {
+      new: true,
+    });
+
+    res.json({ success: true, booking });
+  } catch (error) {
+    console.log("Update booking error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -121,42 +147,6 @@ export const getBookingById = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
-// Update booking
-export const updateBooking = async (req, res) => {
-    try {
-      const updatedBody = {};
-  
-      // Trim string fields
-      for (const key in req.body) {
-        updatedBody[key] = typeof req.body[key] === "string" ? req.body[key].trim() : req.body[key];
-      }
-  
-      // Handle uploaded image files if present
-      const photoFile =
-      req.files?.photoUrl?.[0] || req.files?.cameraPhotoUrl?.[0];
-    if (photoFile?.path) {
-      updatedBody.photoUrl = photoFile.path;
-    }
-  
-      if (req.files?.idProofImageUrl?.[0]?.path) {
-        updatedBody.idProofImageUrl = req.files.idProofImageUrl[0].path;
-      }
-  
-      if (req.files?.idProofImageUrl2?.[0]?.path) {
-        updatedBody.idProofImageUrl2 = req.files.idProofImageUrl2[0].path;
-      }
-  
-      // Update booking
-      const booking = await Booking.findByIdAndUpdate(req.params.id, updatedBody, { new: true });
-  
-      res.json({ success: true, booking });
-    } catch (error) {
-      console.log("Update booking error:", error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  };
-   
 
 // Delete booking (optional)
 export const deleteBooking = async (req, res) => {
@@ -325,20 +315,20 @@ export const exportBookingsExcel = async (req, res) => {
   }
 };
 
-export const uploadCameraPhoto = async (req, res) => {
-  try {
-    const file = req.files?.cameraPhotoUrl?.[0];
-    if (!file) {
-      return res
-        .status(400)
-        .json({ success: false, message: "No webcam photo uploaded" });
-    }
+// export const uploadCameraPhoto = async (req, res) => {
+//   try {
+//     const file = req.files?.cameraPhotoUrl?.[0];
+//     if (!file) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "No webcam photo uploaded" });
+//     }
 
-    res.status(200).json({ success: true, photoUrl: file.path });
-  } catch (error) {
-    console.error("Upload webcam photo error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: error.message });
-  }
-};
+//     res.status(200).json({ success: true, photoUrl: file.path });
+//   } catch (error) {
+//     console.error("Upload webcam photo error:", error);
+//     res
+//       .status(500)
+//       .json({ success: false, message: error.message });
+//   }
+// };
