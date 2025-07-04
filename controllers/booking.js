@@ -1,16 +1,31 @@
 import { Booking } from "../models/booking.js";
 import ExcelJS from "exceljs";
 
-// Trim helper
+// Helper: Clean string input
 const cleanInput = (input) => {
   if (!input || typeof input !== "string") return input;
   return input.trim();
+};
+
+// Helper: Parse boolean from string
+const parseBoolean = (value) => {
+  return value === "true" || value === true;
+};
+
+// Helper: Parse number from string
+const parseNumber = (value) => {
+  const num = Number(value);
+  return isNaN(num) ? 0 : num;
 };
 
 // ✅ CREATE BOOKING
 export const createBooking = async (req, res) => {
   try {
     const body = req.body;
+
+    // Optional logs
+    // console.log("REQ BODY:", body);
+    // console.log("REQ FILES:", req.files);
 
     const count = await Booking.countDocuments();
     const newGrcNo = `GRC-${String(count + 1).padStart(3, "0")}`;
@@ -20,13 +35,13 @@ export const createBooking = async (req, res) => {
       bookingDate: body.bookingDate || new Date(),
       checkInDate: body.checkInDate,
       checkOutDate: body.checkOutDate,
-      days: body.days,
+      days: parseNumber(body.days),
       timeIn: cleanInput(body.timeIn),
       timeOut: cleanInput(body.timeOut),
 
       salutation: cleanInput(body.salutation),
       name: cleanInput(body.name),
-      age: body.age,
+      age: parseNumber(body.age),
       gender: cleanInput(body.gender),
       address: cleanInput(body.address),
       city: cleanInput(body.city),
@@ -45,12 +60,12 @@ export const createBooking = async (req, res) => {
 
       roomNo: cleanInput(body.roomNo),
       planPackage: cleanInput(body.planPackage),
-      noOfAdults: body.noOfAdults,
-      noOfChildren: body.noOfChildren,
-      rate: body.rate,
-      taxIncluded: body.taxIncluded,
-      serviceCharge: body.serviceCharge,
-      isLeader: body.isLeader,
+      noOfAdults: parseNumber(body.noOfAdults),
+      noOfChildren: parseNumber(body.noOfChildren),
+      rate: parseNumber(body.rate),
+      taxIncluded: parseBoolean(body.taxIncluded),
+      serviceCharge: parseBoolean(body.serviceCharge),
+      isLeader: parseBoolean(body.isLeader),
 
       arrivedFrom: cleanInput(body.arrivedFrom),
       destination: cleanInput(body.destination),
@@ -59,28 +74,25 @@ export const createBooking = async (req, res) => {
       marketSegment: cleanInput(body.marketSegment),
       purposeOfVisit: cleanInput(body.purposeOfVisit),
 
-      discountPercent: body.discountPercent,
-      discountRoomSource: body.discountRoomSource,
+      discountPercent: parseNumber(body.discountPercent),
+      discountRoomSource: parseNumber(body.discountRoomSource),
       paymentMode: cleanInput(body.paymentMode),
       paymentStatus: cleanInput(body.paymentStatus),
       bookingRefNo: cleanInput(body.bookingRefNo),
       mgmtBlock: cleanInput(body.mgmtBlock),
       billingInstruction: cleanInput(body.billingInstruction),
 
-      temperature: body.temperature,
-      fromCSV: body.fromCSV,
-      epabx: body.epabx,
-      vip: body.vip,
+      temperature: parseNumber(body.temperature),
+      fromCSV: parseBoolean(body.fromCSV),
+      epabx: parseBoolean(body.epabx),
+      vip: parseBoolean(body.vip),
       status: cleanInput(body.status),
     };
 
-    // ✅ Handle images
-    const photoUrl =
-  req.files?.photoUrl?.[0]?.path || req.body.photoUrl || "";
-const idProofImageUrl =
-  req.files?.idProofImageUrl?.[0]?.path || req.body.idProofImageUrl || "";
-const idProofImageUrl2 =
-  req.files?.idProofImageUrl2?.[0]?.path || req.body.idProofImageUrl2 || "";
+    // ✅ Image URLs from Cloudinary or fallback
+    const photoUrl = req.files?.photoUrl?.[0]?.path || body.photoUrl || "";
+    const idProofImageUrl = req.files?.idProofImageUrl?.[0]?.path || body.idProofImageUrl || "";
+    const idProofImageUrl2 = req.files?.idProofImageUrl2?.[0]?.path || body.idProofImageUrl2 || "";
 
     const newBooking = new Booking({
       ...cleanedBody,
@@ -92,10 +104,11 @@ const idProofImageUrl2 =
     await newBooking.save();
     res.status(201).json({ success: true, booking: newBooking });
   } catch (error) {
-    console.log("Create booking error:", error);
+    console.error("Create booking error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 // ✅ UPDATE BOOKING
 export const updateBooking = async (req, res) => {
@@ -103,10 +116,19 @@ export const updateBooking = async (req, res) => {
     const updatedBody = {};
 
     for (const key in req.body) {
-      updatedBody[key] =
-        typeof req.body[key] === "string" ? req.body[key].trim() : req.body[key];
+      const val = req.body[key];
+
+      // Auto-type conversion
+      if (["taxIncluded", "serviceCharge", "isLeader", "fromCSV", "vip", "epabx"].includes(key)) {
+        updatedBody[key] = parseBoolean(val);
+      } else if (["age", "rate", "days", "discountPercent", "discountRoomSource", "temperature", "noOfAdults", "noOfChildren"].includes(key)) {
+        updatedBody[key] = parseNumber(val);
+      } else {
+        updatedBody[key] = typeof val === "string" ? val.trim() : val;
+      }
     }
 
+    // Files from Cloudinary
     if (req.files?.photoUrl?.[0]?.path) {
       updatedBody.photoUrl = req.files.photoUrl[0].path;
     }
@@ -123,7 +145,7 @@ export const updateBooking = async (req, res) => {
 
     res.json({ success: true, booking });
   } catch (error) {
-    console.log("Update booking error:", error);
+    console.error("Update booking error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
