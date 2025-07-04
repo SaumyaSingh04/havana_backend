@@ -16,7 +16,10 @@ connectDB();
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "https://havanafrontend-37por5p3k-kritika-singh09s-projects.vercel.app"
+    ],
     credentials: true,
   })
 );
