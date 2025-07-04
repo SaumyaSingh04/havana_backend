@@ -34,8 +34,7 @@ const bookingSchema = new mongoose.Schema({
   idProofImageUrl: { type: String },
   idProofImageUrl2: { type: String },
   photoUrl: { type: String },
-  cameraPhotoUrl: { type: String },
-
+  
   // Room Plan Info
   roomNo: { type: String },
   planPackage: { type: String },

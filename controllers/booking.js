@@ -76,10 +76,11 @@ export const createBooking = async (req, res) => {
     };
 
     // Handle uploaded files
-    const photoUrl = req.files?.photo?.[0]?.path;
+    const photoFile =
+      req.files?.photoUrl?.[0] || req.files?.cameraPhotoUrl?.[0];
+    const photoUrl = photoFile?.path;
     const idProofImageUrl = req.files?.idProof?.[0]?.path;
     const idProofImageUrl2 = req.files?.idProof2?.[0]?.path;
-    const cameraPhotoUrl = req.files?.cameraPhoto?.[0]?.path;
 
     // Create booking
     const newBooking = new Booking({
@@ -87,7 +88,6 @@ export const createBooking = async (req, res) => {
       photoUrl,
       idProofImageUrl,
       idProofImageUrl2,
-      cameraPhotoUrl,
     });
 
     await newBooking.save();
@@ -133,9 +133,11 @@ export const updateBooking = async (req, res) => {
       }
   
       // Handle uploaded image files if present
-      if (req.files?.photoUrl?.[0]?.path) {
-        updatedBody.photoUrl = req.files.photoUrl[0].path;
-      }
+      const photoFile =
+      req.files?.photoUrl?.[0] || req.files?.cameraPhotoUrl?.[0];
+    if (photoFile?.path) {
+      updatedBody.photoUrl = photoFile.path;
+    }
   
       if (req.files?.idProofImageUrl?.[0]?.path) {
         updatedBody.idProofImageUrl = req.files.idProofImageUrl[0].path;
@@ -143,10 +145,6 @@ export const updateBooking = async (req, res) => {
   
       if (req.files?.idProofImageUrl2?.[0]?.path) {
         updatedBody.idProofImageUrl2 = req.files.idProofImageUrl2[0].path;
-      }
-  
-      if (req.files?.cameraPhotoUrl?.[0]?.path) {
-        updatedBody.cameraPhotoUrl = req.files.cameraPhotoUrl[0].path;
       }
   
       // Update booking
@@ -237,22 +235,72 @@ export const exportBookingsExcel = async (req, res) => {
     const worksheet = workbook.addWorksheet("Bookings");
 
     worksheet.columns = [
-      { header: "GRC No", key: "grcNo", width: 15 },
-      { header: "Name", key: "name", width: 20 },
-      { header: "Room No", key: "roomNo", width: 10 },
-      { header: "Check-In Date", key: "checkInDate", width: 20 },
-      { header: "Check-Out Date", key: "checkOutDate", width: 20 },
-      { header: "Mobile No", key: "mobileNo", width: 15 },
-      { header: "Status", key: "status", width: 15 },
-      { header: "Created At", key: "createdAt", width: 20 },
+      { header: "GRC No", key: "grcNo" },
+      { header: "Booking Date", key: "bookingDate" },
+      { header: "Check-In Date", key: "checkInDate" },
+      { header: "Check-Out Date", key: "checkOutDate" },
+      { header: "Days", key: "days" },
+      { header: "Time In", key: "timeIn" },
+      { header: "Time Out", key: "timeOut" },
+      { header: "Salutation", key: "salutation" },
+      { header: "Name", key: "name" },
+      { header: "Age", key: "age" },
+      { header: "Gender", key: "gender" },
+      { header: "Address", key: "address" },
+      { header: "City", key: "city" },
+      { header: "Nationality", key: "nationality" },
+      { header: "Mobile No", key: "mobileNo" },
+      { header: "Email", key: "email" },
+      { header: "Phone No", key: "phoneNo" },
+      { header: "Birth Date", key: "birthDate" },
+      { header: "Anniversary", key: "anniversary" },
+      { header: "Company Name", key: "companyName" },
+      { header: "Company GSTIN", key: "companyGSTIN" },
+      { header: "ID Proof Type", key: "idProofType" },
+      { header: "ID Proof Number", key: "idProofNumber" },
+      { header: "Photo URL", key: "photoUrl" },
+      { header: "ID Proof Image 1", key: "idProofImageUrl" },
+      { header: "ID Proof Image 2", key: "idProofImageUrl2" },
+      { header: "Camera Photo", key: "cameraPhotoUrl" },
+      { header: "Room No", key: "roomNo" },
+      { header: "Plan Package", key: "planPackage" },
+      { header: "Adults", key: "noOfAdults" },
+      { header: "Children", key: "noOfChildren" },
+      { header: "Rate", key: "rate" },
+      { header: "Tax Included", key: "taxIncluded" },
+      { header: "Service Charge", key: "serviceCharge" },
+      { header: "Leader", key: "isLeader" },
+      { header: "Arrived From", key: "arrivedFrom" },
+      { header: "Destination", key: "destination" },
+      { header: "Remark", key: "remark" },
+      { header: "Business Source", key: "businessSource" },
+      { header: "Market Segment", key: "marketSegment" },
+      { header: "Purpose of Visit", key: "purposeOfVisit" },
+      { header: "Discount %", key: "discountPercent" },
+      { header: "Discount Source", key: "discountRoomSource" },
+      { header: "Payment Mode", key: "paymentMode" },
+      { header: "Payment Status", key: "paymentStatus" },
+      { header: "Booking Ref No", key: "bookingRefNo" },
+      { header: "Mgmt Block", key: "mgmtBlock" },
+      { header: "Billing Instruction", key: "billingInstruction" },
+      { header: "Temperature", key: "temperature" },
+      { header: "From CSV", key: "fromCSV" },
+      { header: "EPABX", key: "epabx" },
+      { header: "VIP", key: "vip" },
+      { header: "Status", key: "status" },
+      { header: "Created At", key: "createdAt" },
     ];
+    
 
     bookings.forEach((b) => {
       worksheet.addRow({
         ...b,
-        checkInDate: b.checkInDate ? new Date(b.checkInDate).toLocaleString() : "",
-        checkOutDate: b.checkOutDate ? new Date(b.checkOutDate).toLocaleString() : "",
-        createdAt: b.createdAt ? new Date(b.createdAt).toLocaleString() : "",
+        bookingDate: b.bookingDate ? new Date(b.bookingDate).toLocaleString() : "",
+    checkInDate: b.checkInDate ? new Date(b.checkInDate).toLocaleString() : "",
+    checkOutDate: b.checkOutDate ? new Date(b.checkOutDate).toLocaleString() : "",
+    birthDate: b.birthDate ? new Date(b.birthDate).toLocaleDateString() : "",
+    anniversary: b.anniversary ? new Date(b.anniversary).toLocaleDateString() : "",
+    createdAt: b.createdAt ? new Date(b.createdAt).toLocaleString() : "",
       });
     });
 
@@ -278,3 +326,20 @@ export const exportBookingsExcel = async (req, res) => {
   }
 };
 
+export const uploadCameraPhoto = async (req, res) => {
+  try {
+    const file = req.files?.cameraPhotoUrl?.[0];
+    if (!file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No webcam photo uploaded" });
+    }
+
+    res.status(200).json({ success: true, photoUrl: file.path });
+  } catch (error) {
+    console.error("Upload webcam photo error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: error.message });
+  }
+};
