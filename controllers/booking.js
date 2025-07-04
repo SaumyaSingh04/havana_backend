@@ -315,20 +315,33 @@ export const exportBookingsExcel = async (req, res) => {
   }
 };
 
-// export const uploadCameraPhoto = async (req, res) => {
-//   try {
-//     const file = req.files?.cameraPhotoUrl?.[0];
-//     if (!file) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "No webcam photo uploaded" });
-//     }
+export const uploadCameraImageField = async (req, res) => {
+  try {
+    const fieldName =
+      req.files?.photoUrl?.[0]
+        ? "photoUrl"
+        : req.files?.idProofImageUrl?.[0]
+        ? "idProofImageUrl"
+        : req.files?.idProofImageUrl2?.[0]
+        ? "idProofImageUrl2"
+        : null;
 
-//     res.status(200).json({ success: true, photoUrl: file.path });
-//   } catch (error) {
-//     console.error("Upload webcam photo error:", error);
-//     res
-//       .status(500)
-//       .json({ success: false, message: error.message });
-//   }
-// };
+    if (!fieldName) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No image file uploaded" });
+    }
+
+    const uploadedFile = req.files[fieldName][0];
+    const savedPath = uploadedFile.path;
+
+    res.status(200).json({
+      success: true,
+      field: fieldName,
+      photoUrl: savedPath,
+    });
+  } catch (error) {
+    console.error("Camera image upload error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
