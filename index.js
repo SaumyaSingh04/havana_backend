@@ -6,6 +6,7 @@ import { connectDB } from "./db/connectDB.js";
 //import authRoutes from "./routes/auth.route.js";
 import bookingRoutes from "./routes/booking.js";
 import roomCategoryRoutes  from "./routes/roomCategory.js";
+import roomRoutes from "./routes/room.js";
 
 dotenv.config();
 const app = express();
@@ -33,6 +34,7 @@ app.get("/", (req, res) => res.send("API is up and running!"));
 //app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/room-categories", roomCategoryRoutes);
+app.use("/api/rooms", roomRoutes);
 
 app.listen(PORT, () =>
   console.log(`🚀 Server running on http://localhost:${PORT}`)
