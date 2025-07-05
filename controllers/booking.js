@@ -340,3 +340,46 @@ export const exportBookingsExcel = async (req, res) => {
   }
 };
 
+export const getGuestInfoByGrc = async (req, res) => {
+  try {
+    const { grcNo } = req.params;
+
+    const booking = await Booking.findOne({ grcNo }).sort({ createdAt: -1 });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "No existing guest found" });
+    }
+
+    // Pick only guest-related fields
+    const guestData = {
+      salutation: booking.salutation,
+      name: booking.name,
+      age: booking.age,
+      gender: booking.gender,
+      address: booking.address,
+      city: booking.city,
+      nationality: booking.nationality,
+      mobileNo: booking.mobileNo,
+      email: booking.email,
+      phoneNo: booking.phoneNo,
+      birthDate: booking.birthDate,
+      anniversary: booking.anniversary,
+
+      idProofType: booking.idProofType,
+      idProofNumber: booking.idProofNumber,
+      idProofImageUrl: booking.idProofImageUrl,
+      idProofImageUrl2: booking.idProofImageUrl2,
+      photoUrl: booking.photoUrl,
+
+      companyName: booking.companyName,
+      companyGSTIN: booking.companyGSTIN,
+    };
+
+    res.status(200).json({ success: true, data: guestData });
+  } catch (error) {
+    console.error("Error fetching guest info:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+

@@ -9,6 +9,7 @@ import {
   updateStatus,
   searchBookings,
   exportBookingsExcel,
+  getGuestInfoByGrc,
 } from "../controllers/booking.js";
 
 const router = express.Router();
@@ -52,5 +53,7 @@ router.delete("/:id", deleteBooking);
 
 // Update booking status
 router.patch("/:id/status", updateStatus);
+
+router.get("/guest-by-grc/:grcNo", getGuestInfoByGrc);
 
 export default router;
