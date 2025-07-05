@@ -109,7 +109,6 @@ export const createBooking = async (req, res) => {
   }
 };
 
-
 // ✅ UPDATE BOOKING
 export const updateBooking = async (req, res) => {
   try {
@@ -196,50 +195,50 @@ export const updateStatus = async (req, res) => {
 
 // Search & Pagination
 export const searchBookings = async (req, res) => {
-    try {
-      const {
-        page = 1,
-        limit = 10,
-        search = "",
-        status,
-        paymentStatus,
-      } = req.query;
-  
-      const query = {};
-  
-      // Searchable fields
-      if (search) {
-        const regex = new RegExp(search.trim(), "i");
-        query.$or = [
-          { name: regex },
-          { mobileNo: regex },
-          { city: regex },
-          { roomNo: regex },
-        ];
-      }
-  
-      // Optional filters
-      if (status) query.status = status;
-      if (paymentStatus) query.paymentStatus = paymentStatus;
-  
-      const bookings = await Booking.find(query)
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(Number(limit));
-  
-      const total = await Booking.countDocuments(query);
-  
-      res.status(200).json({
-        success: true,
-        bookings,
-        total,
-        page: Number(page),
-        totalPages: Math.ceil(total / limit),
-      });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      status,
+      paymentStatus,
+    } = req.query;
+
+    const query = {};
+
+    if (search) {
+      const regex = new RegExp(search.trim(), "i");
+      query.$or = [
+        { name: regex },
+        { grcNo: regex },
+        { roomNo: regex },
+        { mobileNo: regex },
+        { phoneNo: regex },
+        { city: regex }
+      ];
     }
-  };
+
+    if (status) query.status = status;
+    if (paymentStatus) query.paymentStatus = paymentStatus;
+
+    const bookings = await Booking.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    const total = await Booking.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      bookings,
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 // Export Bookings as CSV (All Fields)
 export const exportBookingsExcel = async (req, res) => {
