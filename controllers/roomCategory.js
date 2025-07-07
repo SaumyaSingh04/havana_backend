@@ -14,15 +14,37 @@ export const createRoomCategory = async (req, res) => {
   }
 };
 
-// ✅ Get All Categories
+// ✅ Get All Categories with Search and Pagination
 export const getAllRoomCategories = async (req, res) => {
   try {
-    const categories = await RoomCategory.find().sort({ createdAt: -1 });
-    res.json({ success: true, categories });
+    const { page = 1, limit = 10, search = "" } = req.query;
+
+    const query = {};
+    if (search) {
+      const regex = new RegExp(search.trim(), "i");
+      query.category = regex;
+    }
+
+    const categories = await RoomCategory.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    const total = await RoomCategory.countDocuments(query);
+
+    res.json({
+      success: true,
+      categories,
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
+    console.error("Get Room Categories error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 // ✅ Update Category
 export const updateRoomCategory = async (req, res) => {

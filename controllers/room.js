@@ -36,15 +36,43 @@ export const createRoom = async (req, res) => {
   }
 };
 
-// ✅ GET ALL Rooms
+// ✅ GET ALL Rooms with Search and Pagination
 export const getAllRooms = async (req, res) => {
   try {
-    const rooms = await Room.find().populate("category").sort({ createdAt: -1 });
-    res.json({ success: true, rooms });
+    const { page = 1, limit = 10, search = "" } = req.query;
+
+    const query = {};
+
+    // 🔍 Search by title, room_number
+    if (search) {
+      const regex = new RegExp(search.trim(), "i");
+      query.$or = [
+        { title: regex },
+        { room_number: regex },
+      ];
+    }
+
+    const rooms = await Room.find(query)
+      .populate("category")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    const total = await Room.countDocuments(query);
+
+    res.json({
+      success: true,
+      rooms,
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
+    console.error("Get Rooms Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 // ✅ GET Room By ID
 export const getRoomById = async (req, res) => {
