@@ -36,14 +36,22 @@ export const createRoom = async (req, res) => {
   }
 };
 
-// ✅ GET ALL Rooms with Search and Pagination
+// ✅ GET ALL Rooms — with search, filters, pagination
 export const getAllRooms = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "" } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      category,
+      status,
+      is_oos,
+      extra_bed,
+    } = req.query;
 
     const query = {};
 
-    // 🔍 Search by title, room_number
+    // 🔍 Search by title or room_number
     if (search) {
       const regex = new RegExp(search.trim(), "i");
       query.$or = [
@@ -51,6 +59,12 @@ export const getAllRooms = async (req, res) => {
         { room_number: regex },
       ];
     }
+
+    // ✅ Filters
+    if (category) query.category = category;
+    if (status !== undefined) query.status = status === "true";
+    if (is_oos !== undefined) query.is_oos = is_oos === "true";
+    if (extra_bed !== undefined) query.extra_bed = extra_bed === "true";
 
     const rooms = await Room.find(query)
       .populate("category")
@@ -60,7 +74,7 @@ export const getAllRooms = async (req, res) => {
 
     const total = await Room.countDocuments(query);
 
-    res.json({
+    res.status(200).json({
       success: true,
       rooms,
       total,
@@ -68,11 +82,10 @@ export const getAllRooms = async (req, res) => {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error("Get Rooms Error:", error);
+    console.error("Get rooms error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 
 // ✅ GET Room By ID
 export const getRoomById = async (req, res) => {

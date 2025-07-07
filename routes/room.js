@@ -2,7 +2,7 @@ import express from "express";
 import upload from "../middleware/upload.js";
 import {
   createRoom,
-  getAllRooms,
+  getAllRooms, 
   getRoomById,
   updateRoom,
   deleteRoom,
@@ -11,7 +11,7 @@ import {
 const router = express.Router();
 
 router.post("/", upload.array("photos", 15), createRoom);
-router.get("/", getAllRooms);
+router.get("/", getAllRooms); // GET ?search=&page=1&limit=10
 router.get("/:id", getRoomById);
 router.put("/:id", upload.array("photos", 15), updateRoom);
 router.delete("/:id", deleteRoom);
