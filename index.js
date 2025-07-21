@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import { connectDB } from "./db/connectDB.js";
 //import authRoutes from "./routes/auth.route.js";
 import bookingRoutes from "./routes/booking.js";
+import reservationRoutes from "./routes/reservation.js";
 import roomCategoryRoutes  from "./routes/roomCategory.js";
 import roomRoutes from "./routes/room.js";
 
@@ -33,6 +34,7 @@ app.get("/", (req, res) => res.send("API is up and running!"));
 // Auth routes
 //app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/reservation", reservationRoutes);
 app.use("/api/room-categories", roomCategoryRoutes);
 app.use("/api/rooms", roomRoutes);
 

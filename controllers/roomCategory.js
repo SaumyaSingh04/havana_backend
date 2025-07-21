@@ -1,4 +1,4 @@
-import { RoomCategory } from "../models/roomCategory.js";
+import {RoomCategory}  from "../models/roomCategory.js";
 
 // ✅ Create Room Category
 export const createRoomCategory = async (req, res) => {
@@ -45,29 +45,28 @@ export const getAllRoomCategories = async (req, res) => {
   }
 };
 
-
 // ✅ Update Category
 export const updateRoomCategory = async (req, res) => {
-    try {
-      const { id } = req.params;
-  
-      const updateData = {};
-      if (req.body.category !== undefined)
-        updateData.category = req.body.category.trim();
-  
-      if (req.body.status !== undefined)
-        updateData.status = req.body.status.trim();
-  
-      const updated = await RoomCategory.findByIdAndUpdate(id, updateData, {
-        new: true,
-      });
-  
-      res.json({ success: true, roomCategory: updated });
-    } catch (error) {
-      console.error("Update category error:", error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  };  
+  try {
+    const { id } = req.params;
+
+    const updateData = {};
+    if (req.body.category !== undefined)
+      updateData.category = req.body.category.trim();
+
+    if (req.body.status !== undefined)
+      updateData.status = req.body.status.trim();
+
+    const updated = await RoomCategory.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
+
+    res.json({ success: true, roomCategory: updated });
+  } catch (error) {
+    console.error("Update category error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 // ✅ Delete Category
 export const deleteRoomCategory = async (req, res) => {

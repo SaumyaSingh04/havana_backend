@@ -1,59 +1,47 @@
+// routes/bookingRoutes.js (ESM version)
 import express from "express";
-import upload from "../middleware/upload.js";
 import {
-  createBooking,
-  getAllBookings,
+  bookRoom,
+  getBookings,
+  getBookingsByCategory,
+  getBookingByGRC,
   getBookingById,
-  updateBooking,
   deleteBooking,
-  updateStatus,
-  searchBookings,
-  exportBookingsExcel,
-  getGuestInfoByGrc,
-} from "../controllers/booking.js";
+  permanentlyDeleteBooking,
+  updateBooking,
+  extendBooking,
+} from "../controllers/bookingController.js";
 
 const router = express.Router();
 
-// Create new booking with image uploads (from file or webcam)
-router.post(
-  "/",
-  upload.fields([
-    { name: "photoUrl", maxCount: 1 },
-    { name: "idProofImageUrl", maxCount: 1 },
-    { name: "idProofImageUrl2", maxCount: 1 },
-  ]),
-  createBooking
+// ✅ Book a room (admin or staff from 'reception')
+router.post("/book", bookRoom);
+
+// ✅ Get all bookings (admin or staff from 'reception')
+router.get("/all", getBookings);
+
+// ✅ Get bookings by category (admin or staff from 'reception')
+router.get("/category/:categoryId", getBookingsByCategory);
+
+// ✅ Get booking by GRC number
+router.get("/grc/:grcNo", getBookingByGRC);
+
+// ✅ Get booking by ID (admin or staff from 'reception')
+router.get("/:bookingId", getBookingById);
+
+// ✅ Unbook (soft delete) (admin or staff from 'reception')
+router.delete("/delete/:bookingId", deleteBooking);
+
+// ✅ Permanently delete (admin only)
+router.delete(
+  "/permanent-delete/:bookingId",
+  permanentlyDeleteBooking
 );
 
-// Export bookings
-router.get("/exportBookingsExcel", exportBookingsExcel);
+// ✅ Update booking (admin or staff from 'reception')
+router.put("/update/:bookingId", updateBooking);
 
-// Search bookings
-router.get("/search", searchBookings);
-
-// Get all bookings
-router.get("/", getAllBookings);
-
-// Get booking by ID
-router.get("/:id", getBookingById);
-
-// Update booking with image updates
-router.put(
-  "/:id",
-  upload.fields([
-    { name: "photoUrl", maxCount: 1 },
-    { name: "idProofImageUrl", maxCount: 1 },
-    { name: "idProofImageUrl2", maxCount: 1 }
-  ]),
-  updateBooking
-);
-
-// Delete booking
-router.delete("/:id", deleteBooking);
-
-// Update booking status
-router.patch("/:id/status", updateStatus);
-
-router.get("/guest-by-grc/:grcNo", getGuestInfoByGrc);
+// ✅ Extend booking (admin or staff from 'reception')
+router.post("/extend/:bookingId", extendBooking);
 
 export default router;
