@@ -168,7 +168,7 @@ export const deleteBooking = async (req, res) => {
 
     await Room.findOneAndUpdate(
       { category: booking.category, room_number: String(booking.roomNumber) },
-      { status: 'available' }
+      { status: true }
     );
 
     res.json({ success: true, message: 'Booking unbooked (marked inactive)' });
