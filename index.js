@@ -8,6 +8,7 @@ import bookingRoutes from "./routes/booking.js";
 import reservationRoutes from "./routes/reservation.js";
 import roomCategoryRoutes  from "./routes/roomCategory.js";
 import roomRoutes from "./routes/room.js";
+import guestRoutes  from "./routes/guest.js";
 
 dotenv.config();
 const app = express();
@@ -37,6 +38,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/reservation", reservationRoutes);
 app.use("/api/room-categories", roomCategoryRoutes);
 app.use("/api/rooms", roomRoutes);
+app.use("/api/guests", guestRoutes);
 
 app.listen(PORT, () =>
   console.log(`🚀 Server running on http://localhost:${PORT}`)
