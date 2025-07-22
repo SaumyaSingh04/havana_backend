@@ -9,6 +9,7 @@ const bookingSchema = new mongoose.Schema({
   roomNumber: { type: Number },
   numberOfRooms: { type: Number, default: 1 },
   isActive: { type: Boolean, default: true },
+  guestId: { type: mongoose.Schema.Types.ObjectId, ref: 'Guest' },
   status: {
     type: String,
     enum: ['Booked', 'Checked In', 'Checked Out', 'Cancelled'],
