@@ -1,4 +1,3 @@
-// routes/reservationRoutes.js (ESM version)
 import express from "express";
 import {
   createReservation,

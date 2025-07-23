@@ -3,17 +3,19 @@ import mongoose from "mongoose";
 const roomSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   category: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'roomCategory', 
+    ref: "RoomCategory", 
     required: true
   },
   room_number: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    trim: true
   },
   price: {
     type: Number,
@@ -29,15 +31,18 @@ const roomSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['available', 'reserved', 'booked', 'maintenance'], // ✅ Added "reserved"
-    default: 'available'
+    enum: ["available", "reserved", "booked", "maintenance"],
+    default: "available"
   },
   description: {
-    type: String
+    type: String,
+    trim: true
   },
-  images: [{
-    type: String
-  }]
+  images: [
+    {
+      type: String
+    }
+  ]
 }, { timestamps: true });
 
 export const Room = mongoose.model("Room", roomSchema);

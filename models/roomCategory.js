@@ -6,6 +6,7 @@ const roomCategorySchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      unique: true,
     },
     status: {
       type: String,

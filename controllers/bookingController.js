@@ -1,100 +1,170 @@
 import { Booking } from "../models/booking.js";
+import { Guest } from "../models/guest.js";
 import { Room } from "../models/room.js";
 import { RoomCategory } from "../models/roomCategory.js";
+import { Reservation } from "../models/reservation.js";
+import { upsertGuestOnBooking } from "./guestController.js";
 
-// 🔹 Generate unique GRC number
+// 🔧 Utility: Helpers
+const generateCode = () => Math.floor(1000 + Math.random() * 9000);
+const generateBookingRefNo = () => {
+  const now = new Date();
+  const date = now.toISOString().split("T")[0].replace(/-/g, "");
+  return `BKG-${date}-${generateCode()}`;
+};
 const generateGRC = async () => {
-  let grcNo = "";
-  let exists = true;
-
+  let exists = true, grcNo;
   while (exists) {
-    const rand = Math.floor(1000 + Math.random() * 9000);
-    grcNo = `GRC-${rand}`;
+    grcNo = `GRC-${generateCode()}`;
     exists = await Booking.findOne({ grcNo });
   }
-
   return grcNo;
 };
 
-// 🔹 Book Room (Single/Multiple)
+// ✅ CREATE BOOKING
 export const bookRoom = async (req, res) => {
   try {
-    const handleBooking = async (categoryId, count, extraDetails = {}) => {
+    const isMultipleBooking = Array.isArray(req.body.bookings);
+
+    const handleBooking = async (categoryId, count, extras = {}) => {
+      // Validate category
       const category = await RoomCategory.findById(categoryId);
-      if (!category) throw new Error(`Category not found: ${categoryId}`);
-    
+      if (!category) throw new Error("Category not found");
+
+      // Find guest
+      let guestId = null;
+      let grcNo = extras.grcNo; // initialize from reservation or generate later
+      
+      // Generate grcNo early if this is a walk-in
+      if (!extras.reservationId && !grcNo) {
+        grcNo = await generateGRC();
+      }
+      
+      // Storing back for later use
+      extras.grcNo = grcNo;
+      
+      if (extras?.contactDetails?.phone) {
+        const existingGuest = await Guest.findOne({ "contactDetails.phone": extras.contactDetails.phone });
+      
+        if (!existingGuest) {
+          const newGuest = await Guest.create({
+            grcNo,
+            bookingRefNo: "N/A", // Will be updated later
+            name: extras.guestDetails?.name,
+            salutation: extras.guestDetails?.salutation,
+            gender: extras.guestDetails?.gender,
+            age: extras.guestDetails?.age,
+            photoUrl: extras.guestDetails?.photoUrl,
+            contactDetails: extras.contactDetails,
+            identityDetails: extras.identityDetails,
+            visitStats: {
+              lastVisit: new Date(),
+              totalVisits: 1
+            }
+          });
+          guestId = newGuest._id;
+        } else {
+          guestId = existingGuest._id;
+        }
+      }      
+
+      // Find rooms
       let availableRooms = [];
-    
-      // 👇 UPDATED LOGIC: Respect fixed room (from reservation) if provided!
-      if (extraDetails.roomAssigned) {
-        const fixedRoom = await Room.findById(extraDetails.roomAssigned);
-        if (!fixedRoom) throw new Error("Assigned room not found.");
-        if (fixedRoom.status !== 'available' && fixedRoom.status !== 'reserved') {
-          throw new Error(`Assigned room (${fixedRoom.room_number}) is not available or reserved`);
+      if (extras.roomAssigned) {
+        const fixedRoom = await Room.findById(extras.roomAssigned);
+        if (!fixedRoom || !["available", "reserved"].includes(fixedRoom.status)) {
+          throw new Error(`Assigned room (${fixedRoom.room_number}) is not available`);
         }
         availableRooms = [fixedRoom];
       } else {
-        availableRooms = await Room.find({
-          category: categoryId,
-          status: 'available'
-        }).limit(count);
-    
+        availableRooms = await Room.find({ category: categoryId, status: "available" }).limit(count);
         if (availableRooms.length < count) {
-          throw new Error(`Not enough available rooms in ${category.category}`);
+          throw new Error(`Only ${availableRooms.length} room(s) available in this category`);
         }
       }
-    
-      const bookedRoomNumbers = [];
+
       const newBookings = [];
-    
-      for (let room of availableRooms) {
-        const newGRC = await generateGRC();
+
+      // Loop and book each room
+      for (const room of availableRooms) {
+        let grcNo, bookingRefNo;
+
+        // Use existing reservation info if present
+        if (extras.reservationId) {
+          const reservation = await Reservation.findById(extras.reservationId);
+          if (!reservation) throw new Error("Invalid reservation ID");
+
+          grcNo = reservation.grcNo;
+          bookingRefNo = reservation.bookingRefNo;
+
+          reservation.status = "Confirmed";
+          reservation.bookingDate = new Date();
+          reservation.b_timestamp = Math.floor(Date.now() / 1000);
+          await reservation.save();
+        } else {
+          grcNo = await generateGRC();
+          bookingRefNo = generateBookingRefNo();
+        }
+
+        // Create booking
         const booking = new Booking({
-          grcNo: newGRC,
-          reservationId: extraDetails.reservationId || null,
-          guestId: extraDetails.guestId || null,
-          category: categoryId,
+          grcNo,
+          bookingRefNo,
+          reservationId: extras.reservationId || null,
+          guestId,
+          categoryId,
           roomNumber: room.room_number,
-          isActive: true,
           numberOfRooms: 1,
-          referenceNumber: `REF-${Math.floor(100000 + Math.random() * 900000)}`,
-          guestDetails: extraDetails.guestDetails,
-          contactDetails: extraDetails.contactDetails,
-          identityDetails: extraDetails.identityDetails,
-          bookingInfo: extraDetails.bookingInfo,
-          paymentDetails: extraDetails.paymentDetails,
-          vehicleDetails: extraDetails.vehicleDetails || {},
-          vip: extraDetails.vip || false
+          isActive: true,
+          b_timestamp: Math.floor(Date.now() / 1000),
+          guestDetails: extras.guestDetails,
+          contactDetails: extras.contactDetails,
+          identityDetails: extras.identityDetails,
+          bookingInfo: extras.bookingInfo,
+          paymentDetails: extras.paymentDetails,
+          vehicleDetails: extras.vehicleDetails || {},
+          vip: extras.vip || false,
+          isForeignGuest: extras.isForeignGuest || false,
         });
-    
+
         await booking.save();
-    
-        // Room is now booked
-        room.status = 'booked';
+        await upsertGuestOnBooking({
+          grcNo,
+          bookingRefNo,
+          guestDetails,
+          contactDetails,
+          identityDetails
+        });
+        room.status = "booked";
         await room.save();
-    
-        bookedRoomNumbers.push(room.room_number);
+
         newBookings.push(booking);
       }
-    
-      return newBookings;
-    };    
 
-    // 🔹 Multiple Bookings
-    if (Array.isArray(req.body.bookings)) {
+      return newBookings;
+    };
+
+    // ✅ MULTIPLE BOOKINGS ARRAY
+    if (isMultipleBooking) {
       const results = [];
       for (const item of req.body.bookings) {
-        const { categoryId, count, ...extraDetails } = item;
-        const bookings = await handleBooking(categoryId, count, extraDetails);
+        const { categoryId, count = 1, ...extras } = item;
+        if (!categoryId) throw new Error("categoryId is required in each booking");
+        const bookings = await handleBooking(categoryId, count, extras);
         results.push(...bookings);
       }
-      return res.status(201).json({ success: true, booked: results });
+
+      return res.status(201).json({
+        success: true,
+        message: `Multiple room(s) booked successfully`,
+        bookings: results
+      });
     }
 
-    // 🔹 Single Booking
+    // ✅ SINGLE BOOKING
     const {
       categoryId,
-      count,
+      count = 1,
       guestDetails,
       contactDetails,
       identityDetails,
@@ -102,15 +172,14 @@ export const bookRoom = async (req, res) => {
       paymentDetails,
       vehicleDetails,
       vip,
+      isForeignGuest,
       reservationId,
-      guestId
+      roomAssigned
     } = req.body;
 
     if (!categoryId) return res.status(400).json({ error: "categoryId is required" });
 
-    const numRooms = Number.isInteger(count) && count > 0 ? count : 1;
-
-    const bookings = await handleBooking(categoryId, numRooms, {
+    const singleBookings = await handleBooking(categoryId, count, {
       guestDetails,
       contactDetails,
       identityDetails,
@@ -118,71 +187,151 @@ export const bookRoom = async (req, res) => {
       paymentDetails,
       vehicleDetails,
       vip,
+      isForeignGuest,
       reservationId,
-      guestId
+      roomAssigned
     });
 
-    return res.status(201).json({ success: true, booked: bookings });
+    return res.status(201).json({
+      success: true,
+      message: "Room(s) booked successfully",
+      bookings: singleBookings
+    });
   } catch (err) {
-    return res.status(400).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message });
   }
 };
 
-// 🔹 Get all bookings
+//get all
 export const getBookings = async (req, res) => {
   try {
-    const filter = req.query.all === 'true' ? {} : { isActive: true };
-    const bookings = await Booking.find(filter).populate('categoryId');
-    res.json(bookings);
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+      search = "",
+      status,
+      categoryId,
+      grcNo,
+      bookingRefNo
+    } = req.query;
+
+    // ✅ Filters
+    const filter = req.query.all === "true" ? {} : { isActive: true };
+
+    // ✅ Search logic
+    if (search) {
+      const regex = new RegExp(search, "i");
+      filter.$or = [
+        { "guestDetails.name": { $regex: regex } },
+        { "contactDetails.phone": { $regex: regex } },
+        { "contactDetails.email": { $regex: regex } },
+        { "grcNo": { $regex: regex } },
+        { "bookingRefNo": { $regex: regex } }
+      ];
+    }
+
+    // ✅ Other filters if provided explicitly
+    if (status) filter.status = status;
+    if (categoryId) filter.categoryId = categoryId;
+    if (grcNo) filter.grcNo = grcNo;
+    if (bookingRefNo) filter.bookingRefNo = bookingRefNo;
+
+    // ✅ Pagination setup
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.max(1, parseInt(limit));
+    const skip = (pageNum - 1) * limitNum;
+
+    // ✅ Sort direction
+    const sortDirection = sortOrder === "asc" ? 1 : -1;
+    const sort = { [sortBy]: sortDirection };
+
+    // ✅ Query bookings
+    const [total, bookings] = await Promise.all([
+      Booking.countDocuments(filter),
+      Booking.find(filter)
+        .populate("categoryId")
+        .sort(sort)
+        .skip(skip)
+        .limit(limitNum)
+    ]);
+
+    res.json({
+      success: true,
+      total,
+      currentPage: pageNum,
+      totalPages: Math.ceil(total / limitNum),
+      bookings
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
-// 🔹 Get Booking by GRC
-export const getBookingByGRC = async (req, res) => {
+// ✅ Get 🧾 guest info — supports reservationId / grcNo
+export const getGuestPrefillInfo = async (req, res) => {
   try {
-    const { grcNo } = req.params;
-    const booking = await Booking.findOne({ grcNo }).populate('categoryId');
-    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    const { grcNo, reservationId } = req.query;
 
-    res.json({ success: true, booking });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+    if (reservationId) {
+      const resv = await Reservation.findById(reservationId);
+      if (!resv) return res.status(404).json({ error: "Reservation not found" });
+
+      return res.json({
+        success: true,
+        guestDetails: {
+          salutation: resv.salutation,
+          name: resv.guestName
+        },
+        contactDetails: {
+          phone: resv.phoneNo || resv.mobileNo,
+          email: resv.email,
+          address: resv.address,
+          city: resv.city,
+          state: resv.state || '',
+          country: resv.country || '',
+          pinCode: resv.pinCode || ''
+        },
+        bookingInfo: {
+          checkIn: resv.checkInDate,
+          checkOut: resv.checkOutDate,
+          arrivalFrom: resv.arrivalFrom,
+          purposeOfVisit: resv.purposeOfVisit,
+          bookingType: resv.reservationType,
+          remarks: resv.remarks || ''
+        },
+        reservationId: resv._id,
+        categoryId: resv.category,
+        roomAssigned: resv.roomAssigned || null
+      });
+    }
+
+    if (grcNo) {
+      const booking = await Booking.findOne({ grcNo, isActive: true });
+      if (!booking) return res.status(404).json({ error: "Guest not found" });
+      const { guestDetails, contactDetails, identityDetails } = booking;
+      return res.json({ success: true, guestDetails, contactDetails, identityDetails });
+    }
+
+    return res.status(400).json({ error: "Provide grcNo or reservationId" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
-// 🔹 Get guest basic info by GRC (for rebooking)
-export const getGuestInfoByGRC = async (req, res) => {
+// ✅ Get complete profile by bookingRef + grc
+export const getGuestInfoByBookingRefAndGRC = async (req, res) => {
   try {
-    const { grcNo } = req.params;
-    const booking = await Booking.findOne({ grcNo });
-    if (!booking) return res.status(404).json({ error: 'Guest not found' });
+    const { bookingRefNo, grcNo } = req.query;
+    if (!bookingRefNo || !grcNo) return res.status(400).json({ error: "Missing bookingRefNo or grcNo" });
 
-    const { guestDetails, contactDetails, identityDetails } = booking;
-    res.json({ success: true, guestDetails, contactDetails, identityDetails });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-};
-
-// 🔹 Get full guest profile by bookingId + GRC (for validation)
-export const getGuestInfoByBookingIdAndGRC = async (req, res) => {
-  try {
-    const { bookingId, grcNo } = req.query;
-    if (!bookingId || !grcNo) return res.status(400).json({ error: "bookingId and grcNo required" });
-
-    const booking = await Booking.findOne({ _id: bookingId, grcNo });
-    if (!booking) return res.status(404).json({ error: "Guest not found" });
+    const booking = await Booking.findOne({ bookingRefNo, grcNo }).populate("categoryId");
+    if (!booking) return res.status(404).json({ error: "Booking not found" });
 
     const {
-      guestDetails,
-      contactDetails,
-      identityDetails,
-      bookingInfo,
-      paymentDetails,
-      vehicleDetails,
-      status
+      guestDetails, contactDetails, identityDetails, bookingInfo,
+      paymentDetails, vehicleDetails, status
     } = booking;
 
     res.json({
@@ -193,30 +342,38 @@ export const getGuestInfoByBookingIdAndGRC = async (req, res) => {
       bookingInfo,
       paymentDetails,
       vehicleDetails,
-      bookingStatus: status
+      bookingStatus: status,
+      category: booking.categoryId
     });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
-// 🔹 Get bookings by category
-export const getBookingsByCategory = async (req, res) => {
+// ✅ Get Booking Info by ID / GRC / Category — dynamic query
+export const getBookingInfo = async (req, res) => {
   try {
-    const { categoryId } = req.params;
-    const bookings = await Booking.find({ category: categoryId }).populate('categoryId');
-    
-    const safeBookings = bookings.map(booking => {
-      const bookingObj = booking.toObject();
-      if (!bookingObj.categoryId) {
-        bookingObj.categoryId = { name: 'Unknown' };
-      }
-      return bookingObj;
-    });
-    
-    res.json(safeBookings);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const { bookingId, grcNo, categoryId } = req.query;
+
+    let query = {};
+    if (bookingId) query._id = bookingId;
+    if (grcNo) query.grcNo = grcNo;
+    if (categoryId) query.categoryId = categoryId;
+
+    if (Object.keys(query).length === 0) {
+      return res.status(400).json({ error: "Pass bookingId, grcNo or categoryId" });
+    }
+
+    if (categoryId) {
+      const bookings = await Booking.find(query).populate("categoryId");
+      return res.json({ success: true, bookings });
+    } else {
+      const booking = await Booking.findOne(query).populate("categoryId");
+      if (!booking) return res.status(404).json({ error: "Booking not found" });
+      return res.json({ success: true, booking });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -382,47 +539,6 @@ export const extendBooking = async (req, res) => {
       message: 'Booking extended successfully',
       booking
     });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// 🔹 Get booking by Booking ID
-export const getBookingById = async (req, res) => {
-  try {
-    const { bookingId } = req.params;
-    const booking = await Booking.findById(bookingId).populate('categoryId');
-    if (!booking) return res.status(404).json({ error: 'Booking not found' });
-
-    const result = booking.toObject();
-    if (!result.categoryId) result.categoryId = { name: 'Unknown' };
-
-    res.json({ success: true, booking: result });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-//get booking by id and grc
-export const getBookingByIdAndGRC = async (req, res) => {
-  try {
-    const { bookingId, grcNo } = req.query;
-
-    if (!bookingId || !grcNo) {
-      return res.status(400).json({ error: 'Both bookingId and grcNo are required' });
-    }
-
-    const booking = await Booking.findOne({ _id: bookingId, grcNo }).populate('categoryId');
-
-    if (!booking) {
-      return res.status(404).json({ error: 'Booking not found with provided bookingId and grcNo' });
-    }
-
-    const result = booking.toObject();
-    if (!result.categoryId) result.categoryId = { name: 'Unknown' };
-
-    res.json({ success: true, booking: result });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

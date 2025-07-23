@@ -1,13 +1,16 @@
 import mongoose from 'mongoose';
 
 const guestSchema = new mongoose.Schema({
-  grcNo: { type: String, unique: true },
-  bookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking', unique: true },
+  grcNo: { type: String, required: true },
+  bookingRefNo: { type: String },
 
   salutation: String,
   name: { type: String, required: true },
   age: Number,
-  gender: { type: String, enum: ['Male', 'Female', 'Other'] },
+  gender: {
+    type: String,
+    enum: ['Male', 'Female', 'Other']
+  },
 
   identityDetails: {
     idType: {

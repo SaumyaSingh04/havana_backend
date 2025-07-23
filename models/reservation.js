@@ -2,23 +2,73 @@ import mongoose from "mongoose";
 
 const reservationSchema = new mongoose.Schema(
   {
-    grcNo: { type: String, unique: true, required: true }, // Guest Registration Card Number
-    bookingRefNo: { type: String }, // External reference (e.g., OTA ID)
+    // Auto-generated identifiers
+    reservationId: {
+      type: String,
+      unique: true,
+      required: true, // Example: RSV-20250727-1541-1234
+    },
+    bookingRefNo: {
+      type: String,
+      unique: true,
+      required: true, // Same as used in Booking — ensures link
+    },
+    grcNo: {
+      type: String,
+      unique: true,
+      required: true // Same used at guest check-in → Booking
+    },
 
-    reservationType: { type: String, enum: ["Online", "Walk-in", "Agent"] }, // Type of booking
-    modeOfReservation: String, // Phone, Email, Website, etc.
+    // Timestamps
+    r_timestamp: {
+      type: Number,
+      default: () => Math.floor(Date.now() / 1000),
+    },
+    b_timestamp: {
+      type: Number,
+    },
 
+    reservationType: {
+      type: String,
+      enum: ["Online", "Walk-in", "Agent"],
+    },
+    modeOfReservation: String,
+
+    // Room Info
     category: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "RoomCategory", // ✅ Fixed: Match your RoomCategory model name
-    }, // Room category selected
-
-    bookingDate: { type: Date, default: Date.now }, // When reservation is made
-    status: {
-      type: String,
-      enum: ["Confirmed", "Tentative", "Waiting", "Cancelled"],
-      default: "Confirmed",
+      ref: "RoomCategory",
     },
+    roomAssigned: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Room",
+    },
+    roomHoldStatus: {
+      type: String,
+      enum: ["Held", "Pending", "Released"],
+      default: "Pending",
+    },
+    roomHoldUntil: Date,
+
+    // Stay Info
+    checkInDate: Date,
+    checkInTime: String,
+    checkOutDate: Date,
+    checkOutTime: String,
+    noOfRooms: { type: Number, default: 1 },
+    noOfAdults: Number,
+    noOfChildren: Number,
+    planPackage: String,
+    rate: Number,
+    arrivalFrom: String,
+    purposeOfVisit: String,
+    roomPreferences: {
+      smoking: Boolean,
+      bedType: String,
+    },
+    specialRequests: String,
+    remarks: String,
+    billingInstruction: String,
 
     // Guest Details
     salutation: String,
@@ -33,45 +83,14 @@ const reservationSchema = new mongoose.Schema(
     gstApplicable: { type: Boolean, default: true },
     companyGSTIN: String,
 
-    // Stay Info
-    roomHoldStatus: {
-      type: String,
-      enum: ['Held', 'Pending', 'Released'],
-      default: 'Pending',
-    },
-    roomAssigned: { type: mongoose.Schema.Types.ObjectId, ref: 'Room' },
-    roomHoldUntil: { type: Date },
-    checkInDate: Date,
-    checkInTime: String,
-    checkOutDate: Date,
-    checkOutTime: String,
-    noOfRooms: { type: Number, default: 1 },
-    noOfAdults: Number,
-    noOfChildren: Number,
-    planPackage: String, // EP, CP, MAP, etc.
-    rate: Number, // Total rate for the stay
-
-    arrivalFrom: String,
-    purposeOfVisit: String, // Business, Leisure, etc.
-
-    roomPreferences: {
-      smoking: Boolean,
-      bedType: String, // e.g., King, Twin
-    },
-
-    specialRequests: String,
-    remarks: String,
-    billingInstruction: String,
-
-    // Payment Info
-    paymentMode: String, // Cash, Card, UPI
-    refBy: String, // Referral source (agent, staff, etc.)
+    // Payment
+    paymentMode: String,
     advancePaid: Number,
     isAdvancePaid: { type: Boolean, default: false },
     transactionId: String,
     discountPercent: Number,
+    refBy: String,
 
-    // Optional Vehicle Details
     vehicleDetails: {
       vehicleNumber: String,
       vehicleType: String,
@@ -80,21 +99,29 @@ const reservationSchema = new mongoose.Schema(
       driverMobile: String,
     },
 
+    // Reservation Lifecycle
+    status: {
+      type: String,
+      enum: ["Confirmed", "Tentative", "Waiting", "Cancelled"],
+      default: "Confirmed",
+    },
+    cancellationReason: String,
+    cancelledBy: String,
+    isNoShow: { type: Boolean, default: false },
     vip: { type: Boolean },
     isForeignGuest: { type: Boolean, default: false },
-    createdBy: String, // Staff/User who created the reservation
+    createdBy: String,
 
+    // Conversion — populated on check-in
     linkedCheckInId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Booking", // Link to check-in if completed
+      ref: "Booking",
     },
-
-    // --- Additional Fields ---
-    cancellationReason: String, // If status is Cancelled
-    cancelledBy: String, // Staff/system/user info
-    isNoShow: { type: Boolean, default: false }, // For tracking no-shows
+    bookingDate: Date, // Filled during booking conversion
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-export const Reservation = mongoose.model('Reservation', reservationSchema);
+export const Reservation = mongoose.model("Reservation", reservationSchema);

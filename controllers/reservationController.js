@@ -1,36 +1,73 @@
-import {Reservation} from '../models/reservation.js';
-import {Room} from '../models/room.js';
+import { Reservation } from '../models/reservation.js';
+import { Room } from '../models/room.js';
+import { upsertGuestOnBooking } from "./guestController.js";
 
-// Generate unique GRC number
+// ➕ Generate 4-digit code
+const generate4DigitCode = () => Math.floor(1000 + Math.random() * 9000);
+
+// 🧠 Generate unique GRC number (GRC-3245)
 const generateGRC = async () => {
-  let grcNo, exists = true;
+  let grcNo;
+  let exists = true;
   while (exists) {
-    const rand = Math.floor(1000 + Math.random() * 9000);
-    grcNo = `GRC-${rand}`;
+    grcNo = `GRC-${generate4DigitCode()}`;
     exists = await Reservation.findOne({ grcNo });
   }
   return grcNo;
 };
 
+// 🧠 Generate bookingRefNo (BRF-YYYYMMDD-HHMM-1234)
+const generateBookingRef = () => {
+  const now = new Date();
+  const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const timePart = now.getHours().toString().padStart(2, '0') + now.getMinutes().toString().padStart(2, '0');
+  return `BRF-${datePart}-${timePart}-${generate4DigitCode()}`;
+};
+
+// 🧠 Generate reservationId (RSV-YYYYMMDD-HHMM-1234)
+const generateReservationId = () => {
+  const now = new Date();
+  const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const timePart = now.getHours().toString().padStart(2, '0') + now.getMinutes().toString().padStart(2, '0');
+  return `RSV-${datePart}-${timePart}-${generate4DigitCode()}`;
+};
+
+
+
 // 🔹 Create a new reservation
 export const createReservation = async (req, res) => {
   try {
+    // 🎯 Generate IDs upfront
+    const reservationId = generateReservationId();
+    const bookingRefNo = generateBookingRef();
     const grcNo = await generateGRC();
+
+    // 👉 Create reservation instance
     const reservation = new Reservation({
+      reservationId,
+      bookingRefNo,
       grcNo,
       ...req.body,
     });
 
+    // 📍 Mark room status reserved
     if (reservation.roomAssigned) {
       await Room.findByIdAndUpdate(reservation.roomAssigned, { status: 'reserved' });
     }
 
     await reservation.save();
-    res.status(201).json({ success: true, reservation });
+    await upsertGuestOnBooking(booking);
+
+    res.status(201).json({
+      success: true,
+      message: "Reservation created",
+      reservation,
+    });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
 };
+
 
 // 🔹 Get all reservations
 export const getAllReservations = async (req, res) => {
@@ -113,27 +150,31 @@ export const updateReservation = async (req, res) => {
   }
 };
 
-// 🔹 Cancel reservation
+// cancle revervation
 export const cancelReservation = async (req, res) => {
   try {
     const { cancellationReason, cancelledBy } = req.body;
-    const reservation = await Reservation.findById(req.params.id);
+
+    const reservation = await Reservation.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: {
+          status: "Cancelled",
+          cancellationReason,
+          cancelledBy,
+          cancelledAt: new Date()
+        }
+      },
+      { new: true, runValidators: false } // <-- disable full validation
+    );
 
     if (!reservation) {
-      return res.status(404).json({ success: false, message: 'Reservation not found' });
+      return res.status(404).json({ success: false, error: "Reservation not found" });
     }
 
-    reservation.status = 'Cancelled';
-    reservation.cancellationReason = cancellationReason;
-    reservation.cancelledBy = cancelledBy;
-
-    if (reservation.roomAssigned) {
-      await Room.findByIdAndUpdate(reservation.roomAssigned, { status: 'available' });
-    }
-
-    await reservation.save();
-    res.json({ success: true, message: 'Reservation cancelled', reservation });
+    res.json({ success: true, reservation });
   } catch (error) {
+    console.error("Cancel Reservation Error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -170,16 +211,21 @@ export const linkToCheckIn = async (req, res) => {
   try {
     const { checkInId } = req.body;
     const reservation = await Reservation.findById(req.params.id);
+
     if (!reservation) {
       return res.status(404).json({ success: false, message: 'Reservation not found' });
     }
 
     reservation.linkedCheckInId = checkInId;
-    reservation.status = 'Confirmed';
+    reservation.status = 'Confirmed'; // Optional
+    reservation.b_timestamp = Math.floor(Date.now() / 1000);
+    reservation.bookingDate = new Date();
+
     await reservation.save();
 
-    res.json({ success: true, message: 'Check-in linked successfully', reservation });
+    res.json({ success: true, message: 'Reservation linked to Booking', reservation });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+

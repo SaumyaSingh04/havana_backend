@@ -1,7 +1,7 @@
 import express from "express";
 import {
   createRoomCategory,
-  getAllRoomCategories, 
+  getAllRoomCategories,
   updateRoomCategory,
   deleteRoomCategory,
 } from "../controllers/roomCategory.js";

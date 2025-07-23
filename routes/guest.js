@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   upsertGuest,
+  upsertGuestOnBooking,
   getGuestByGRC,
   addGuestVisit,
   getAllGuests
@@ -10,6 +11,8 @@ const router = express.Router();
 
 // ✅ Create or update guest using grcNo + bookingId
 router.post("/upsert", upsertGuest);
+
+//router.post("/booking-upsert", upsertGuestOnBooking); // runs automatically during or after a booking creation
 
 // ✅ Get guest by GRC no
 router.get("/:grcNo", getGuestByGRC);
