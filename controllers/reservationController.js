@@ -52,8 +52,14 @@ export const createReservation = async (req, res) => {
 
     // 📍 Mark room status reserved
     if (reservation.roomAssigned) {
-      await Room.findByIdAndUpdate(reservation.roomAssigned, { status: 'reserved' });
+      const updatedRoom = await Room.findByIdAndUpdate(
+        reservation.roomAssigned,
+        { status: 'reserved', is_reserved: true },
+        { new: true }
+      );
+      console.log('Room updated:', updatedRoom);
     }
+    
 
     await reservation.save();
     await upsertGuestOnBooking(booking);
