@@ -1,3 +1,4 @@
+// routes/reservationRoutes.js (ESM version)
 import express from "express";
 import {
   createReservation,
@@ -13,7 +14,7 @@ import {
 
 const router = express.Router();
 
-// ✅ Reservation APIs
+// ✅ Reservation APIs : /api/reservation
 router.post("/", createReservation);
 router.get("/", getAllReservations);
 router.get("/:id", getReservationById);
