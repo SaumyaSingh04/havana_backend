@@ -6,9 +6,9 @@ import { connectDB } from "./db/connectDB.js";
 //import authRoutes from "./routes/auth.route.js";
 import bookingRoutes from "./routes/booking.js";
 import reservationRoutes from "./routes/reservation.js";
-import roomCategoryRoutes  from "./routes/roomCategory.js";
+import roomCategoryRoutes from "./routes/roomCategory.js";
 import roomRoutes from "./routes/room.js";
-import guestRoutes  from "./routes/guest.js";
+import guestRoutes from "./routes/guest.js";
 
 dotenv.config();
 const app = express();
@@ -22,7 +22,8 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://havanafrontend-pi5p.vercel.app"
+      "https://havanafrontend-pi5p.vercel.app",
+      "https://havanna-booking.vercel.app",
     ],
     credentials: true,
   })
