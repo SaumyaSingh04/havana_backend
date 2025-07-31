@@ -6,12 +6,12 @@ const bookingSchema = new mongoose.Schema(
     grcNo: {
       type: String,
       unique: true,
-      required: true, // Example: GRC-3245
+      // Example: GRC-3245
     },
     bookingRefNo: {
       type: String,
       unique: true,
-      required: true, // BRF-20250727-1549-3245
+      // BRF-20250727-1549-3245
     },
     reservationId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -26,8 +26,9 @@ const bookingSchema = new mongoose.Schema(
     },
 
     // Room & Guest Info
-    categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'RoomCategory' }  ,
+    categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "RoomCategory" },
     roomNumber: Number,
+    roomRate: { type: Number, required: true },
     numberOfRooms: { type: Number, default: 1 },
     isActive: { type: Boolean, default: true },
     guestId: { type: mongoose.Schema.Types.ObjectId, ref: "Guest" },
@@ -64,7 +65,14 @@ const bookingSchema = new mongoose.Schema(
     identityDetails: {
       idType: {
         type: String,
-        enum: ["Aadhaar", "PAN", "Passport", "Driving License", "Voter ID", "Other"],
+        enum: [
+          "Aadhaar",
+          "PAN",
+          "Passport",
+          "Driving License",
+          "Voter ID",
+          "Other",
+        ],
       },
       idNumber: String,
       idPhotoFront: String,
@@ -83,8 +91,8 @@ const bookingSchema = new mongoose.Schema(
       remarks: String,
       adults: Number,
       children: Number,
-      actualCheckInTime: Date,
-      actualCheckOutTime: Date,
+      actualCheckInTime: String,
+      actualCheckOutTime: String,
     },
 
     extensionHistory: [
@@ -108,6 +116,12 @@ const bookingSchema = new mongoose.Schema(
 
     paymentDetails: {
       totalAmount: Number,
+      discountPercent: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 100,
+      },
       advancePaid: Number,
       paymentMode: {
         type: String,
@@ -140,4 +154,5 @@ const bookingSchema = new mongoose.Schema(
   }
 );
 
-export const Booking = mongoose.models.Booking || mongoose.model("Booking", bookingSchema);
+export const Booking =
+  mongoose.models.Booking || mongoose.model("Booking", bookingSchema);

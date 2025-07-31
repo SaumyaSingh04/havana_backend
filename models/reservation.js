@@ -11,12 +11,12 @@ const reservationSchema = new mongoose.Schema(
     bookingRefNo: {
       type: String,
       unique: true,
-      required: true, // Same as used in Booking — ensures link
+      // Same as used in Booking — ensures link
     },
     grcNo: {
       type: String,
       unique: true,
-      required: true // Same used at guest check-in → Booking
+      // Same used at guest check-in → Booking
     },
 
     // Timestamps
@@ -117,7 +117,7 @@ const reservationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Booking",
     },
-    bookingDate: Date, // Filled during booking conversion
+    // bookingDate: Date, // Filled during booking conversion
   },
   {
     timestamps: true,
