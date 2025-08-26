@@ -22,6 +22,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
+      "http://localhost:5174",
       "https://havanafrontend-pi5p.vercel.app",
       "https://havanna-booking.vercel.app",
     ],
